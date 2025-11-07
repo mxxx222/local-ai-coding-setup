@@ -1,0 +1,59 @@
+{
+  "models": [
+    {
+      "title": "GPT-4 Turbo",
+      "provider": "openai",
+      "model": "gpt-4-turbo-preview",
+      "apiKey": "${OPENAI_API_KEY}",
+      "contextLength": 128000,
+      "completionOptions": {
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "top_k": 40,
+        "max_tokens": 4096
+      }
+    },
+    {
+      "title": "GPT-3.5 Turbo",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "apiKey": "${OPENAI_API_KEY}",
+      "contextLength": 16385,
+      "completionOptions": {
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "max_tokens": 2048
+      }
+    }
+  ],
+  "allowAnonymousTelemetry": false,
+  "customCommands": [
+    {
+      "name": "code-review",
+      "prompt": "Review this code for best practices, potential bugs, and improvements. Provide specific, actionable feedback."
+    },
+    {
+      "name": "optimize",
+      "prompt": "Optimize this code for performance, readability, and maintainability. Explain the changes made."
+    },
+    {
+      "name": "explain",
+      "prompt": "Explain this code in simple terms. Break down what it does, how it works, and any important concepts."
+    },
+    {
+      "name": "test-cases",
+      "prompt": "Generate comprehensive test cases for this code, including edge cases and error scenarios."
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "GPT-3.5 Turbo (Tab)",
+    "provider": "openai",
+    "model": "gpt-3.5-turbo",
+    "apiKey": "${OPENAI_API_KEY}"
+  },
+  "embeddingsProvider": {
+    "provider": "openai",
+    "model": "text-embedding-ada-002",
+    "apiKey": "${OPENAI_API_KEY}"
+  }
+}
