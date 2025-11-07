@@ -31,6 +31,10 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_info() {
+    echo -e "${CYAN}[DETAIL]${NC} $1"
+}
+
 print_header() {
     echo -e "${CYAN}=== $1 ===${NC}"
 }
@@ -68,25 +72,34 @@ check_prerequisites() {
     done
     
     # Check disk space (minimum 20GB)
-    local available_space
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        available_space=$(df -h . | tail -1 | awk '{print $4}' | sed 's/G//')
+    local df_output available_kb available_gb_text min_kb
+    min_kb=$((20 * 1024 * 1024)) # 20 GiB in KiB for df -Pk output
+    if df_output=$(df -Pk . 2>/dev/null | tail -1); then
+        available_kb=$(awk '{print $4}' <<<"$df_output")
+        
+        if [[ "$available_kb" =~ ^[0-9]+$ ]]; then
+            available_gb_text=$(awk -v kb="$available_kb" 'BEGIN {printf "%.1f", kb / 1048576}')
+            
+            if (( available_kb >= min_kb )); then
+                print_success "✓ Sufficient disk space: ${available_gb_text}GB"
+            else
+                print_warning "⚠ Low disk space: ${available_gb_text}GB (recommended: 20GB+)"
+            fi
+        else
+            print_warning "⚠ Could not determine disk space (got: ${available_kb:-unknown})"
+        fi
     else
-        available_space=$(df -h . | tail -1 | awk '{print $4}' | sed 's/G//')
+        print_warning "⚠ Could not determine disk space (df command failed)"
     fi
-    
-    if (( $(echo "$available_space > 20" | bc -l) 2>/dev/null || [[ $available_space -ge 20 ]] )); then
-        print_success "✓ Sufficient disk space: ${available_space}GB"
-    else
-        print_warning "⚠ Low disk space: ${available_space}GB (recommended: 20GB+)"
-    fi
-    
-    # Check internet connectivity
-    if ping -c 1 google.com >/dev/null 2>&1; then
+
+    # Check internet connectivity (skip automatically in offline environments)
+    local test_url="${INTERNET_TEST_URL:-https://clients3.google.com/generate_204}"
+    if [[ "${SKIP_NETWORK_CHECK:-0}" == "1" ]]; then
+        print_status "Skipping internet connectivity check (offline mode requested)"
+    elif curl --head --silent --max-time 5 "$test_url" >/dev/null 2>&1; then
         print_success "✓ Internet connectivity confirmed"
     else
-        print_error "✗ No internet connection detected"
-        has_errors=true
+        print_warning "⚠ Could not reach the internet (checked: $test_url). Continuing in offline mode."
     fi
     
     if $has_errors; then
@@ -270,31 +283,40 @@ install_llama_cpp() {
 # Download models
 download_models() {
     print_status "Downloading recommended models..."
-    
-    # This would typically be handled by individual platform scripts
-    print_info "Models will be downloaded during platform setup"
+
+    if [[ -f "scripts/model_downloader.py" ]]; then
+        python3 scripts/model_downloader.py --all
+    else
+        print_warning "Model downloader script not found"
+        print_info "Models will be downloaded during platform setup"
+    fi
 }
 
 # Setup VS Code
 setup_vscode() {
     print_status "Setting up VS Code configuration..."
-    
+
     if [[ -f "configs/continue_config.json" ]]; then
-        mkdir -p ~/.continue
-        cp configs/continue_config.json ~/.continue/config.json
+        mkdir -p "$HOME/.continue"
+        cp configs/continue_config.json "$HOME/.continue/config.json"
         print_success "Continue.dev configuration applied"
     fi
-    
+
     if [[ -f "configs/vscode_settings.json" ]]; then
-        mkdir -p ~/.vscode
-        cp configs/vscode_settings.json ~/.vscode/settings.json
+        mkdir -p "$HOME/.vscode"
+        cp configs/vscode_settings.json "$HOME/.vscode/settings.json"
         print_success "VS Code settings applied"
     fi
-    
+
     print_info "Installing VS Code extensions..."
     if command -v code >/dev/null 2>&1; then
-        code --install-extension continue.continue
-        print_success "Continue.dev extension installed"
+        if [[ -f "scripts/install_vscode_exts.sh" ]]; then
+            chmod +x scripts/install_vscode_exts.sh
+            ./scripts/install_vscode_exts.sh
+        else
+            code --install-extension continue.continue
+            print_success "Continue.dev extension installed"
+        fi
     else
         print_warning "VS Code not found. Please install extensions manually."
     fi
@@ -313,11 +335,14 @@ setup_monitoring() {
 # Run health check
 run_health_check() {
     print_status "Running system health check..."
-    
+
     if [[ -f "scripts/health_check.py" ]]; then
         python3 scripts/health_check.py
+    elif [[ -f "scripts/benchmark.py" ]]; then
+        print_info "Running basic benchmark instead..."
+        python3 scripts/benchmark.py --quick 2>/dev/null || print_warning "Benchmark failed"
     else
-        print_error "Health check script not found"
+        print_warning "No health check tools available"
     fi
 }
 
@@ -333,7 +358,7 @@ verify_setup() {
     fi
     
     # Check VS Code configuration
-    if [[ -f "~/.continue/config.json" ]]; then
+    if [[ -f "$HOME/.continue/config.json" ]]; then
         print_success "✓ VS Code Continue.dev configured"
     else
         print_warning "⚠ VS Code not configured (run setup_vscode)"
