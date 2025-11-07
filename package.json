@@ -1,0 +1,36 @@
+{
+  "name": "local-ai-coding-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for local AI coding assistance",
+  "main": "mcp_server.js",
+  "bin": {
+    "local-ai-coding-mcp": "./mcp_server.js"
+  },
+  "scripts": {
+    "start": "node mcp_server.js",
+    "dev": "node mcp_server.js",
+    "test": "echo 'MCP server test - integrate with local AI models'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "coding",
+    "development",
+    "local-ai",
+    "ollama",
+    "llama"
+  ],
+  "author": "Local AI Coding Setup",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mxxx222/local-ai-coding-setup.git"
+  }
+}

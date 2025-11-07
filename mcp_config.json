@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "local-ai-coding": {
+      "command": "node",
+      "args": ["/path/to/local_ai_coding_setup/mcp_server.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
